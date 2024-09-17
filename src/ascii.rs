@@ -5,13 +5,16 @@
 
 use crate::error::Result;
 use color_eyre::eyre::WrapErr;
+use lazy_static::lazy_static;
 use opencv::{
     core::{Mat, Size},
     imgproc,
     prelude::*,
 };
 
-const ASCII_CHARS: &[char] = &[' ', '.', ':', '-', '=', '+', '*', '#', '%', '@'];
+lazy_static! {
+    static ref ASCII_CHARS: Vec<char> = vec![' ', '.', ':', '-', '=', '+', '*', '#', '%', '@'];
+}
 
 /// Converts a grayscale value to an ASCII character.
 ///
