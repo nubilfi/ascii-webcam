@@ -1,5 +1,10 @@
 # ASCII Webcam
 
+[![version](https://img.shields.io/crates/v/ascii-webcam?color=blue&logo=rust&style=flat-square)](https://crates.io/crates/ascii-webcam)
+[![Build Status](https://github.com/nubilfi/ascii-webcam/actions/workflows/rust.yml/badge.svg)](https://github.com/nubilfi/ascii-webcam/actions?branch=main)
+[![Documentation](https://docs.rs/ascii-webcam/badge.svg)](https://docs.rs/ascii-webcam/latest/ascii-webcam/)
+[![codecov](https://codecov.io/gh/nubilfi/ascii-webcam/graph/badge.svg?token=SRGOFSB31Q)](https://codecov.io/gh/nubilfi/ascii-webcam)
+
 ASCII Webcam is an application that captures video from your webcam and displays it as ASCII art in real-time within your terminal. This project demonstrates the use of OpenCV for video capture, image processing techniques, and terminal-based UI rendering using the [Ratatui](https://ratatui.rs/) library.
 
 ## Features
