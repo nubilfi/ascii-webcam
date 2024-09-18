@@ -1,0 +1,67 @@
+name: Rust
+
+on:
+  push:
+    branches: [ "main" ]
+    paths-ignore:
+      - '**/README.md'
+  pull_request:
+    branches: [ "main" ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+
+    runs-on: ubuntu-24.04
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Rust
+      uses: hecrj/setup-rust-action@v2
+      with:
+        rust-version: 1.80.1
+
+    - name: Cache Cargo registry
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-cargo-
+    - name: Install deps
+      run: rustup update
+
+    - name: Clippy
+      run: cargo clippy -- -W clippy::pedantic
+
+    - name: Unused Deps
+      run: |
+        rustup update nightly && \
+        cargo +nightly install cargo-udeps && \
+        cargo +nightly udeps
+
+    - name: Build
+      run: cargo build
+
+    - name: Run tests
+      run: cargo test
+
+    - name: Generate code coverage
+      run: |
+        cargo install cargo-tarpaulin --version 0.27.2 && \
+        cargo tarpaulin --all-features --workspace --out Xml --avoid-cfg-tarpaulin
+    - name: Upload coverage reports to Codecov
+      uses: codecov/codecov-action@v4
+      env:
+        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+    - name: Archive code coverage results
+      uses: actions/upload-artifact@v4
+      with:
+        name: code-coverage-report
+        path: cobertura.xml
