@@ -20,7 +20,7 @@ jobs:
     - uses: actions/checkout@v4
 
     - name: Install dependencies
-      run: sudo apt-get update && sudo apt-get install -y libclang-dev
+      run: sudo apt-get update && sudo apt-get install -y libclang-dev libopencv-dev python3-opencv
 
     - name: Set up Rust
       uses: hecrj/setup-rust-action@v2
@@ -41,6 +41,11 @@ jobs:
 
     - name: Clippy
       run: cargo clippy -- -W clippy::pedantic
+
+    - name: Outdated
+      run: |
+        cargo install cargo-outdated && \
+        cargo outdated -d2
 
     - name: Unused Deps
       run: |
