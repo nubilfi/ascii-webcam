@@ -35,6 +35,7 @@ impl App {
     /// assert_eq!(app.fps, 0.0);
     /// assert_eq!(app.show_help, false);
     /// ```
+    #[must_use]
     pub fn new() -> App {
         App {
             ascii_frame: String::new(),
@@ -50,6 +51,16 @@ impl App {
     /// * `frame` - The video frame to process
     /// * `width` - The width to resize the frame to
     /// * `height` - The height to resize the frame to
+    ///
+    /// # Returns
+    ///
+    /// Returns `Ok(())` if the update was successful.
+    ///
+    /// # Errors
+    ///
+    /// This function may return an error if:
+    /// - The frame processing fails
+    /// - There are issues with resizing or converting the frame
     pub fn update(&mut self, frame: &Mat, width: i32, height: i32) -> Result<()> {
         self.ascii_frame =
             process_frame(frame, width, height).wrap_err("failed to process frame")?;
@@ -108,6 +119,7 @@ impl App {
     }
 
     /// Renders the help menu.
+    #[allow(clippy::unused_self)]
     fn render_help(&self, f: &mut Frame) {
         let area = f.area();
         let help_area = Rect::new(

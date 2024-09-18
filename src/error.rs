@@ -6,11 +6,12 @@
 use color_eyre::Report;
 use thiserror::Error;
 
-/// A type alias for Results that use our custom `AppError` type.
+/// A type alias for Results that use custom `AppError` type.
 pub type Result<T> = std::result::Result<T, Report>;
 
 /// Custom error types for the ASCII Webcam application.
 #[derive(Error, Debug)]
+#[allow(clippy::module_name_repetitions)]
 pub enum AppError {
     /// Represents I/O errors.
     #[error("IO error: {0}")]

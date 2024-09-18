@@ -34,6 +34,7 @@ lazy_static! {
 /// use ascii_webcam::ascii::get_ascii_char;
 /// assert_eq!(get_ascii_char(0), ' ');
 /// ```
+#[must_use]
 pub fn get_ascii_char(value: u8) -> char {
     let index = (value as usize * (ASCII_CHARS.len() - 1)) / 255;
     ASCII_CHARS[index.min(ASCII_CHARS.len() - 1)]
@@ -53,6 +54,14 @@ pub fn get_ascii_char(value: u8) -> char {
 /// of the resized and grayscale-converted video frame. Each line of the string represents a row
 /// of ASCII characters corresponding to the pixels in the resized frame. On failure, it returns
 /// an error with a descriptive message.
+///
+/// # Errors
+///
+/// This function may return an error if:
+/// - Converting the frame to grayscale fails
+/// - Resizing the frame fails
+/// - Accessing pixel values fails
+/// - String conversion or joining operations fail
 pub fn process_frame(frame: &Mat, width: i32, height: i32) -> Result<String> {
     let mut gray = Mat::default();
     imgproc::cvt_color(frame, &mut gray, imgproc::COLOR_BGR2GRAY, 0)

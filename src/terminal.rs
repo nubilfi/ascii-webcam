@@ -21,6 +21,19 @@ use std::{io, panic};
 /// 3. Enters the alternate screen
 /// 4. Enables mouse capture
 /// 5. Creates and returns a new Terminal instance
+///
+/// # Returns
+///
+/// Returns a `Result<Terminal<CrosstermBackend<io::Stdout>>>` containing the set up terminal if successful.
+///
+/// # Errors
+///
+/// This function may return an error if:
+/// - Enabling raw mode fails
+/// - Entering the alternate screen fails
+/// - Enabling mouse capture fails
+/// - Creating the terminal instance fails
+#[allow(clippy::module_name_repetitions)]
 pub fn setup_terminal() -> Result<Terminal<CrosstermBackend<io::Stdout>>> {
     let original_hook = panic::take_hook();
     panic::set_hook(Box::new(move |panic_info| {
@@ -44,6 +57,18 @@ pub fn setup_terminal() -> Result<Terminal<CrosstermBackend<io::Stdout>>> {
 /// 1. Disables raw mode
 /// 2. Leaves the alternate screen
 /// 3. Disables mouse capture
+///
+/// # Returns
+///
+/// Returns a `Result<()>` which is `Ok(())` if the terminal was successfully reset.
+///
+/// # Errors
+///
+/// This function may return an error if:
+/// - Disabling raw mode fails
+/// - Leaving the alternate screen fails
+/// - Disabling mouse capture fails
+#[allow(clippy::module_name_repetitions)]
 pub fn reset_terminal() -> Result<()> {
     disable_raw_mode().wrap_err("failed to disable raw mode")?;
     execute!(io::stdout(), LeaveAlternateScreen, DisableMouseCapture)
