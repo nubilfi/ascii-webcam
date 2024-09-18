@@ -18,7 +18,7 @@ exclude = [
 color-eyre = "0.6.3"
 crossterm = "0.28.1"
 lazy_static = "1.5.0"
-opencv = { version = "0.92.3", features = ["videoio", "imgproc"] }
+opencv = { version = "0.93.0", features = ["videoio", "imgproc"] }
 ratatui = "0.28.1"
 thiserror = "1.0.63"
 
