@@ -8,8 +8,11 @@ use crate::error::Result;
 use crate::terminal::{reset_terminal, setup_terminal};
 use crate::video::VideoCapture;
 use color_eyre::eyre::WrapErr;
+use crossbeam_channel::{bounded, select};
 use crossterm::event::{self, Event, KeyCode};
 use ratatui::Terminal;
+use std::sync::{Arc, Mutex};
+use std::thread;
 use std::time::{Duration, Instant};
 
 mod app;
@@ -18,7 +21,10 @@ mod error;
 mod terminal;
 mod video;
 
+/// Target frames per second for the application
 const TARGET_FPS: u64 = 30;
+/// Size of the circular buffer used for FPS calculation
+const FPS_BUFFER_SIZE: usize = 120;
 
 /// The main function of the application.
 ///
@@ -29,72 +35,107 @@ const TARGET_FPS: u64 = 30;
 /// 4. Runs the main application loop
 /// 5. Resets the terminal before exiting
 fn main() -> Result<()> {
-    // Install color_eyre
     color_eyre::install()?;
-
     let mut terminal = setup_terminal().wrap_err("failed to setup terminal")?;
-
-    let mut camera = VideoCapture::new(0).wrap_err("failed to initialize camera")?;
+    let camera = Arc::new(Mutex::new(
+        VideoCapture::new(0).wrap_err("failed to initialize camera")?,
+    ));
     let mut app = App::new();
 
-    let res = run_app(&mut terminal, &mut app, &mut camera);
+    let res = run_app(&mut terminal, &mut app, camera);
 
     reset_terminal().wrap_err("failed to reset terminal")?;
-
     res
 }
 
 /// Runs the main application loop.
 ///
 /// This function is responsible for:
+/// - Setting up multi-threaded frame capture and event handling
 /// - Updating the application state
 /// - Rendering frames
 /// - Handling user input
 /// - Maintaining the target frame rate
+/// - Calculating a stable FPS using a circular buffer
 fn run_app<B: ratatui::backend::Backend>(
     terminal: &mut Terminal<B>,
     app: &mut App,
-    camera: &mut VideoCapture,
+    camera: Arc<Mutex<VideoCapture>>,
 ) -> Result<()> {
-    let mut last_frame_time = Instant::now();
+    // Set up channels for communication between threads
+    let (frame_sender, frame_receiver) = bounded(2);
+    let (event_sender, event_receiver) = bounded(10);
+
+    // Spawn frame capture thread
+    let camera_clone = Arc::clone(&camera);
+    thread::spawn(move || loop {
+        if let Ok(mut camera) = camera_clone.lock() {
+            if let Ok(frame) = camera.read_frame() {
+                if frame_sender.send(frame).is_err() {
+                    break;
+                }
+            }
+        }
+    });
+
+    // Spawn event handling thread
+    thread::spawn(move || loop {
+        if event::poll(Duration::from_millis(1)).unwrap() {
+            if let Ok(event) = event::read() {
+                if event_sender.send(event).is_err() {
+                    break;
+                }
+            }
+        }
+    });
+
+    // Initialize FPS calculation buffer
+    let mut fps_buffer = vec![Duration::from_secs(1); FPS_BUFFER_SIZE];
+    let mut fps_index = 0;
+
     let target_frame_time = Duration::from_micros(1_000_000 / TARGET_FPS);
 
     loop {
         let frame_start = Instant::now();
 
-        let size = terminal.size().wrap_err("failed to get terminal size")?;
-        let term_width = i32::from(size.width);
-        let term_height = i32::from(size.height);
+        // Use select! macro to handle both frame processing and events
+        select! {
+            recv(frame_receiver) -> frame => {
+                if let Ok(frame) = frame {
+                    let size = terminal.size().wrap_err("failed to get terminal size")?;
+                    let term_width = i32::from(size.width);
+                    let term_height = i32::from(size.height);
+                    app.update(&frame, term_width, term_height)
+                        .wrap_err("failed to update app state")?;
 
-        if let Ok(frame) = camera.read_frame() {
-            app.update(&frame, term_width, term_height)
-                .wrap_err("failed to update app state")?;
-        }
+                    terminal
+                        .draw(|f| app.render(f))
+                        .wrap_err("failed to render frame")?;
 
-        terminal
-            .draw(|f| app.render(f))
-            .wrap_err("failed to render frame")?;
+                    // Update FPS calculation
+                    let frame_time = frame_start.elapsed();
+                    fps_buffer[fps_index] = frame_time;
+                    fps_index = (fps_index + 1) % FPS_BUFFER_SIZE;
 
-        if event::poll(Duration::from_millis(1)).wrap_err("failed to poll for events")? {
-            if let Event::Key(key) = event::read().wrap_err("failed to read event")? {
-                match key.code {
-                    KeyCode::Char('q') => return Ok(()),
-                    KeyCode::Char('?') => app.toggle_help(),
-                    _ => {}
+                    let avg_frame_time = fps_buffer.iter().sum::<Duration>() / FPS_BUFFER_SIZE as u32;
+                    app.fps = 1.0 / avg_frame_time.as_secs_f64();
+                }
+            }
+            recv(event_receiver) -> event => {
+                if let Ok(Event::Key(key)) = event {
+                    match key.code {
+                        KeyCode::Char('q') => return Ok(()),
+                        KeyCode::Char('?') => app.toggle_help(),
+                        _ => {}
+                    }
                 }
             }
         }
 
-        let current_frame_time = Instant::now();
-        app.fps = 1.0
-            / current_frame_time
-                .duration_since(last_frame_time)
-                .as_secs_f64();
-        last_frame_time = current_frame_time;
-
+        // Maintain target frame rate
         let processing_time = frame_start.elapsed();
         if processing_time < target_frame_time {
-            std::thread::sleep(target_frame_time - processing_time);
+            thread::sleep(target_frame_time - processing_time);
         }
     }
 }

@@ -26,23 +26,17 @@ ASCII Webcam is an application that captures video from your webcam and displays
    - On Archlinux: `sudo pacman -Sy opencv`
    - For other systems, please refer to the [OpenCV installation guide](https://docs.opencv.org/4.x/d7/d9f/tutorial_linux_install.html).
 
-2. Clone the repository:
-   ```
-   git clone https://github.com/nubilfi/ascii-webcam.git
-   cd ascii-webcam
-   ```
-
-3. Build the project:
+2. Build the project:
    ```
    cargo b -r
    ```
 
-4. Run test:
+3. Run test:
    ```
    cargo t
    ```
 
-5. Run benchmark:
+4. Run benchmark:
    ```
    cargo bench
    ```
@@ -62,30 +56,7 @@ Once the application starts:
 - Press `?` to toggle the help menu.
 - Press `q` to quit the application.
 
-## Project Structure
-
-- `main.rs`: Entry point of the application, sets up the terminal and runs the main loop.
-- `app.rs`: Defines the `App` struct and methods for updating and rendering the application state.
-- `ascii.rs`: Contains functions for converting video frames to ASCII art.
-- `error.rs`: Defines custom error types and result aliases.
-- `terminal.rs`: Provides functions for setting up and resetting the terminal.
-- `video.rs`: Implements a wrapper around OpenCV's VideoCapture for easy integration.
-
 ## License
 
 [MIT](https://github.com/nubilfi/ascii-webcam/blob/main/LICENSE)
 
-## Acknowledgments
-
-- [OpenCV](https://opencv.org/) for computer vision capabilities.
-- [Ratatui](https://github.com/ratatui-org/ratatui) for the terminal user interface.
-
-## Notes
-
-Hey there! Just wanted to let you know that this ASCII Webcam project is primarily a fun learning exercise. It's been a blast to work on, and I've learned many things about Rust, OpenCV, and terminal UIs in the process.
-
-While this is a personal learning project, I'm always open to feedback, suggestions, or even pull requests if you're feeling adventurous!
-
-Feel free to experiment with the code, break things (and then fix them!), or use it as a starting point for your own cool projects. If you come up with any interesting modifications or improvements, I'd love to see them!
-
-Contributions are welcome! 

@@ -1,9 +1,9 @@
 [package]
 name = "ascii-webcam"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 license = "MIT"
-description = "A webcam that visualizes its output as ASCII art directly in the terminal "
+description = "A webcam that visualizes its output as ASCII art directly in the terminal"
 homepage = "https://github.com/nubilfi/ascii-webcam"
 documentation = "https://docs.rs/ascii-webcam/latest/ascii-webcam"
 repository = "https://github.com/nubilfi/ascii-webcam"
@@ -12,11 +12,14 @@ readme = "README.md"
 exclude = [
   ".github/*",
   ".gitignore",
+  "assets/*",
+  "benches/*",
 ]
 
 [dependencies]
 color-eyre = "0.6.3"
-crossterm = "0.28.1"
+crossbeam-channel = "0.5.13"
+crossterm = { version = "0.28.1", features = ["event-stream"] }
 lazy_static = "1.5.0"
 opencv = { version = "0.93.0", features = ["videoio", "imgproc"] }
 ratatui = "0.28.1"
