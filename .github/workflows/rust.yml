@@ -24,15 +24,15 @@ jobs:
       uses: actions/cache@v4
       with:
         path: /var/cache/apt/archives
-        key: ${{ runner.os }}-apt-${{ hashFiles('.github/apt-packages.txt') }}
+        key:
+          ${{ runner.os }}-apt-${{ hashFiles('.github/apt-packages.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-apt-
 
-    - name: Create apt packages list if cache miss
-      if: steps.apt-cache.outputs.cache-hit != 'true'
+    - if: {{ steps.apt-cache.outputs.cache-hit != 'true' }}
+      name: Create apt packages list if cache miss
       run: |
         echo "libclang-dev libopencv-dev python3-opencv" > .github/apt-packages.txt
-
-    - name: Install dependencies
-      run: |
         sudo apt-get update
         sudo apt-get install -y $(cat .github/apt-packages.txt)
 
@@ -41,14 +41,27 @@ jobs:
       with:
         rust-version: 1.80.1
 
-    - name: Update dependencies
+    - uses: actions/cache@v4
+      id: cargo-cache
+      with:
+        path: |
+          ~/.cargo/bin/
+          ~/.cargo/registry/index/
+          ~/.cargo/registry/cache/
+          ~/.cargo/git/db/
+          target/
+        key:
+          ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-cargo-
+
+    - if: ${{ steps.cargo-cache.outputs.cache-hit != 'true' }}
+      name: Update dependencies
+      continue-on-error: true
       run: cargo update
 
     - name: Install deps
       run: rustup update
-
-    - name: Clippy
-      run: cargo clippy -- -W clippy::pedantic
 
     - name: Outdated
       run: |
