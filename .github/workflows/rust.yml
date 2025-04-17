@@ -29,8 +29,8 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-apt-
 
-    - if: {{ steps.apt-cache.outputs.cache-hit != 'true' }}
-      name: Create apt packages list if cache miss
+    - name: Create apt packages list if cache miss
+      if: steps.apt-cache.outputs.cache-hit != 'true'
       run: |
         echo "libclang-dev libopencv-dev python3-opencv" > .github/apt-packages.txt
         sudo apt-get update
