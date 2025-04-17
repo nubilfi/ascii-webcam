@@ -5,16 +5,14 @@
 
 use crate::error::Result;
 use color_eyre::eyre::WrapErr;
-use lazy_static::lazy_static;
 use opencv::{
-    core::{Mat, Size},
+    core::{AlgorithmHint, Mat, Size},
     imgproc,
     prelude::*,
 };
 
-lazy_static! {
-    static ref ASCII_CHARS: Vec<char> = vec![' ', '.', ':', '-', '=', '+', '*', '#', '%', '@'];
-}
+static ASCII_CHARS: std::sync::LazyLock<Vec<char>> =
+    std::sync::LazyLock::new(|| vec![' ', '.', ':', '-', '=', '+', '*', '#', '%', '@']);
 
 /// Converts a grayscale value to an ASCII character.
 ///
@@ -64,8 +62,14 @@ pub fn get_ascii_char(value: u8) -> char {
 /// - String conversion or joining operations fail
 pub fn process_frame(frame: &Mat, width: i32, height: i32) -> Result<String> {
     let mut gray = Mat::default();
-    imgproc::cvt_color(frame, &mut gray, imgproc::COLOR_BGR2GRAY, 0)
-        .wrap_err("failed to convert frame to grayscale")?;
+    imgproc::cvt_color(
+        frame,
+        &mut gray,
+        imgproc::COLOR_BGR2GRAY,
+        0,
+        AlgorithmHint::ALGO_HINT_DEFAULT,
+    )
+    .wrap_err("failed to convert frame to grayscale")?;
 
     let mut resized = Mat::default();
     imgproc::resize(

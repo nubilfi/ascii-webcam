@@ -42,7 +42,7 @@ fn main() -> Result<()> {
     ));
     let mut app = App::new();
 
-    let res = run_app(&mut terminal, &mut app, camera);
+    let res = run_app(&mut terminal, &mut app, &camera);
 
     reset_terminal().wrap_err("failed to reset terminal")?;
     res
@@ -60,14 +60,14 @@ fn main() -> Result<()> {
 fn run_app<B: ratatui::backend::Backend>(
     terminal: &mut Terminal<B>,
     app: &mut App,
-    camera: Arc<Mutex<VideoCapture>>,
+    camera: &Arc<Mutex<VideoCapture>>,
 ) -> Result<()> {
     // Set up channels for communication between threads
     let (frame_sender, frame_receiver) = bounded(2);
     let (event_sender, event_receiver) = bounded(10);
 
     // Spawn frame capture thread
-    let camera_clone = Arc::clone(&camera);
+    let camera_clone = Arc::clone(camera);
     thread::spawn(move || loop {
         if let Ok(mut camera) = camera_clone.lock() {
             if let Ok(frame) = camera.read_frame() {
@@ -117,7 +117,7 @@ fn run_app<B: ratatui::backend::Backend>(
                     fps_buffer[fps_index] = frame_time;
                     fps_index = (fps_index + 1) % FPS_BUFFER_SIZE;
 
-                    let avg_frame_time = fps_buffer.iter().sum::<Duration>() / FPS_BUFFER_SIZE as u32;
+                    let avg_frame_time = fps_buffer.iter().sum::<Duration>() / u32::try_from(FPS_BUFFER_SIZE)?;
                     app.fps = 1.0 / avg_frame_time.as_secs_f64();
                 }
             }
