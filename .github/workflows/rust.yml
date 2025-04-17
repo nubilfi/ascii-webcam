@@ -19,8 +19,22 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
+    - name: Cache apt packages
+      id: apt-cache
+      uses: actions/cache@v4
+      with:
+        path: /var/cache/apt/archives
+        key: ${{ runner.os }}-apt-${{ hashFiles('.github/apt-packages.txt') }}
+
+    - name: Create apt packages list if cache miss
+      if: steps.apt-cache.outputs.cache-hit != 'true'
+      run: |
+        echo "libclang-dev libopencv-dev python3-opencv" > .github/apt-packages.txt
+
     - name: Install dependencies
-      run: sudo apt-get update && sudo apt-get install -y libclang-dev libopencv-dev python3-opencv
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y $(cat .github/apt-packages.txt)
 
     - name: Set up Rust
       uses: hecrj/setup-rust-action@v2
@@ -30,15 +44,6 @@ jobs:
     - name: Update dependencies
       run: cargo update
 
-    - name: Cache Cargo registry
-      uses: actions/cache@v4
-      with:
-        path: |
-          ~/.cargo/registry
-          ~/.cargo/git
-        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-        restore-keys: |
-          ${{ runner.os }}-cargo-
     - name: Install deps
       run: rustup update
 
