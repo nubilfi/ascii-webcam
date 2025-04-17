@@ -39,7 +39,7 @@ jobs:
     - name: Set up Rust
       uses: hecrj/setup-rust-action@v2
       with:
-        rust-version: 1.83.0
+        rust-version: 1.86.0
 
     - uses: actions/cache@v4
       id: cargo-cache
