@@ -58,7 +58,10 @@ jobs:
     - if: ${{ steps.cargo-cache.outputs.cache-hit != 'true' }}
       name: Update dependencies
       continue-on-error: true
-      run: cargo update
+      run: cargo clean && rm -rf ~/.cargo/registry/index/* ~/.cargo/registry/cache/* && cargo update
+
+    - name: Clippy
+      run: cargo clippy -- -W clippy::pedantic
 
     - name: Install deps
       run: rustup update
