@@ -80,11 +80,17 @@ fn run_app<B: ratatui::backend::Backend>(
 
     // Spawn event handling thread
     thread::spawn(move || loop {
-        if event::poll(Duration::from_millis(1)).unwrap() {
-            if let Ok(event) = event::read() {
-                if event_sender.send(event).is_err() {
-                    break;
+        match event::poll(Duration::from_millis(1)) {
+            Ok(true) => {
+                if let Ok(event) = event::read() {
+                    if event_sender.send(event).is_err() {
+                        break;
+                    }
                 }
+            }
+            Ok(false) => {}
+            Err(_) => {
+                break;
             }
         }
     });
@@ -126,6 +132,7 @@ fn run_app<B: ratatui::backend::Backend>(
                     match key.code {
                         KeyCode::Char('q') => return Ok(()),
                         KeyCode::Char('?') => app.toggle_help(),
+                        KeyCode::Char('f') => app.toggle_fps(),
                         _ => {}
                     }
                 }

@@ -21,6 +21,7 @@ pub struct App {
     pub ascii_frame: String,
     pub fps: f64,
     pub show_help: bool,
+    pub show_fps: bool,
 }
 
 impl App {
@@ -41,6 +42,7 @@ impl App {
             ascii_frame: String::new(),
             fps: 0.0,
             show_help: false,
+            show_fps: false,
         }
     }
 
@@ -72,6 +74,11 @@ impl App {
         self.show_help = !self.show_help;
     }
 
+    /// Toggles the visibility of the fps.
+    pub fn toggle_fps(&mut self) {
+        self.show_fps = !self.show_fps;
+    }
+
     /// Renders the application UI.
     ///
     /// This method is responsible for rendering:
@@ -82,39 +89,24 @@ impl App {
     pub fn render(&self, f: &mut Frame) {
         let chunks = Layout::default()
             .direction(Direction::Vertical)
-            .constraints([
-                Constraint::Length(3),
-                Constraint::Min(0),
-                Constraint::Length(1),
-            ])
+            .constraints([Constraint::Length(1), Constraint::Min(0)])
             .split(f.area());
 
-        let fps_text = format!("FPS: {:.2}", self.fps);
-        let fps_paragraph = Paragraph::new(fps_text)
-            .style(Style::default().fg(Color::Cyan))
-            .block(Block::default().borders(Borders::ALL).title("Stats"));
-
-        f.render_widget(fps_paragraph, chunks[0]);
-
-        let ascii_block = Block::default().borders(Borders::ALL).title("ASCII Webcam");
+        let instructions = Line::from(vec!["Help".into(), " <?>".cyan().bold()]);
+        let ascii_block = Block::default()
+            .borders(Borders::ALL)
+            .title("ASCII Webcam")
+            .title_bottom(instructions.alignment(ratatui::layout::Alignment::Center));
         let ascii_paragraph = Paragraph::new(self.ascii_frame.as_str()).block(ascii_block);
 
         f.render_widget(ascii_paragraph, chunks[1]);
 
-        let instructions = Line::from(vec![
-            "Quit".into(),
-            " <q>".blue().bold(),
-            " | Help".into(),
-            " <?>".blue().bold(),
-        ]);
-        let instructions_paragraph = Paragraph::new(instructions)
-            .style(Style::default().fg(Color::White))
-            .alignment(ratatui::layout::Alignment::Center);
-
-        f.render_widget(instructions_paragraph, chunks[2]);
-
         if self.show_help {
             self.render_help(f);
+        }
+
+        if self.show_fps {
+            self.render_fps(f);
         }
     }
 
@@ -139,7 +131,7 @@ impl App {
                 Span::styled(
                     "q",
                     Style::default()
-                        .fg(Color::Blue)
+                        .fg(Color::Cyan)
                         .add_modifier(ratatui::style::Modifier::BOLD),
                 ),
                 Span::raw(" to quit the application"),
@@ -147,9 +139,19 @@ impl App {
             Line::from(vec![
                 Span::raw("Press "),
                 Span::styled(
+                    "f",
+                    Style::default()
+                        .fg(Color::Cyan)
+                        .add_modifier(ratatui::style::Modifier::BOLD),
+                ),
+                Span::raw(" to show FPS counter"),
+            ]),
+            Line::from(vec![
+                Span::raw("Press "),
+                Span::styled(
                     "?",
                     Style::default()
-                        .fg(Color::Blue)
+                        .fg(Color::Cyan)
                         .add_modifier(ratatui::style::Modifier::BOLD),
                 ),
                 Span::raw(" to toggle this help menu"),
@@ -161,5 +163,27 @@ impl App {
             .alignment(ratatui::layout::Alignment::Center);
 
         f.render_widget(help_paragraph, help_area);
+    }
+
+    /// Renders the FPS overlay.
+    fn render_fps(&self, f: &mut Frame) {
+        let area = f.area();
+        // Position in top-right corner
+        let fps_area = Rect::new(
+            area.width.saturating_sub(20), // 20 chars wide, positioned at right
+            1,                             // 1 row from top
+            19,                            // width
+            3,                             // height for border + text
+        );
+
+        f.render_widget(Clear, fps_area);
+
+        let fps_text = format!("FPS: {:.0}", self.fps);
+        let fps_paragraph = Paragraph::new(fps_text)
+            .style(Style::default().fg(Color::Cyan))
+            .block(Block::default().borders(Borders::ALL))
+            .alignment(ratatui::layout::Alignment::Center);
+
+        f.render_widget(fps_paragraph, fps_area);
     }
 }

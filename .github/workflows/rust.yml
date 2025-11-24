@@ -1,5 +1,4 @@
 name: Rust
-
 on:
   push:
     branches: [ "main" ]
@@ -7,42 +6,32 @@ on:
       - '**/README.md'
   pull_request:
     branches: [ "main" ]
-
 env:
   CARGO_TERM_COLOR: always
-
 jobs:
   build:
-
-    runs-on: ubuntu-24.04
-
+    runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
-
-    - name: Cache apt packages
-      id: apt-cache
-      uses: actions/cache@v4
-      with:
-        path: /var/cache/apt/archives
-        key:
-          ${{ runner.os }}-apt-${{ hashFiles('.github/apt-packages.txt') }}
-        restore-keys: |
-          ${{ runner.os }}-apt-
-
-    - name: Create apt packages list if cache miss
-      if: steps.apt-cache.outputs.cache-hit != 'true'
+    
+    - name: Install system dependencies
       run: |
-        echo "libclang-dev libopencv-dev python3-opencv" > .github/apt-packages.txt
         sudo apt-get update
-        sudo apt-get install -y $(cat .github/apt-packages.txt)
-
+        sudo apt-get install -y libclang-dev libopencv-dev python3-opencv
+        
+    - name: Check OpenCV version
+      run: |
+        pkg-config --modversion opencv4 || echo "OpenCV4 not found"
+        dpkg -l | grep libopencv
+        
     - name: Set up Rust
-      uses: hecrj/setup-rust-action@v2
+      uses: dtolnay/rust-toolchain@stable
       with:
-        rust-version: 1.86.0
-
-    - uses: actions/cache@v4
-      id: cargo-cache
+        toolchain: 1.86.0
+        components: clippy
+        
+    - name: Cache Cargo registry and build
+      uses: actions/cache@v4
       with:
         path: |
           ~/.cargo/bin/
@@ -50,48 +39,41 @@ jobs:
           ~/.cargo/registry/cache/
           ~/.cargo/git/db/
           target/
-        key:
-          ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}-${{ hashFiles('**/Cargo.toml') }}
         restore-keys: |
+          ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}-
           ${{ runner.os }}-cargo-
-
-    - if: ${{ steps.cargo-cache.outputs.cache-hit != 'true' }}
-      name: Update dependencies
-      continue-on-error: true
-      run: cargo clean && rm -rf ~/.cargo/registry/index/* ~/.cargo/registry/cache/* && cargo update
-
+          
     - name: Clippy
       run: cargo clippy -- -W clippy::pedantic
-
-    - name: Install deps
-      run: rustup update
-
-    - name: Outdated
+      
+    - name: Check for outdated dependencies
       run: |
-        cargo install cargo-outdated && \
+        cargo install cargo-outdated --locked || true
         cargo outdated -d2
-
-    - name: Unused Deps
+        
+    - name: Check for unused dependencies
       run: |
-        rustup update nightly && \
-        cargo +nightly install cargo-udeps && \
+        rustup toolchain install nightly
+        cargo install cargo-udeps --locked || true
         cargo +nightly udeps
-
+        
     - name: Build
-      run: cargo build
-
+      run: cargo build --verbose
+      
     - name: Run tests
-      run: cargo test
-
+      run: cargo test --verbose
+      
     - name: Generate code coverage
       run: |
-        cargo install cargo-tarpaulin --version 0.27.2 && \
+        cargo install cargo-tarpaulin --version 0.27.2 --locked
         cargo tarpaulin --all-features --workspace --out Xml --avoid-cfg-tarpaulin
+        
     - name: Upload coverage reports to Codecov
       uses: codecov/codecov-action@v4
       env:
         CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
-
+        
     - name: Archive code coverage results
       uses: actions/upload-artifact@v4
       with:
